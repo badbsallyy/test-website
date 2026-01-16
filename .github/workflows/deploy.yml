@@ -31,11 +31,17 @@ jobs:
       - name: Create deployment directory
         run: |
           mkdir -p _site
+          if [ ! -f index.html ]; then
+            echo "Error: index.html not found"
+            exit 1
+          fi
           cp index.html _site/
-          cp README.md _site/
+          if [ -f README.md ]; then
+            cp README.md _site/
+          fi
       
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: '_site'
       
