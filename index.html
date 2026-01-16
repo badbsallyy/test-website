@@ -409,15 +409,17 @@
                 this.addFlag('interaction', 'Touch Support', hasTouch, false);
 
                 // Check mouse precision (will be updated on mouse move)
-                window.mouseMovements = 0;
-                document.addEventListener('mousemove', () => {
-                    window.mouseMovements++;
-                });
+                let mouseMovements = 0;
+                const mouseMoveHandler = () => {
+                    mouseMovements++;
+                };
+                document.addEventListener('mousemove', mouseMoveHandler);
 
                 setTimeout(() => {
-                    if (window.mouseMovements === 0) {
+                    if (mouseMovements === 0) {
                         this.addFlag('interaction', 'Keine Mausbewegung (5s)', true, true);
                     }
+                    document.removeEventListener('mousemove', mouseMoveHandler);
                 }, 5000);
             }
 
