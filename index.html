@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Detection Test Page</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .score-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .score-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .score-number {
+            font-size: 72px;
+            font-weight: bold;
+        }
+
+        .score-number.human {
+            color: #10b981;
+        }
+
+        .score-number.suspicious {
+            color: #f59e0b;
+        }
+
+        .score-number.bot {
+            color: #ef4444;
+        }
+
+        .score-label {
+            font-size: 24px;
+            color: #666;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .detection-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: #f9fafb;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .detection-item .label {
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .detection-item .value {
+            color: #6b7280;
+            font-family: 'Courier New', monospace;
+            text-align: right;
+            word-break: break-word;
+            max-width: 60%;
+        }
+
+        .flag {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .flag.detected {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .flag.clean {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .flag.warning {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .flag.info {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .timestamp {
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            margin-top: 20px;
+            opacity: 0.8;
+        }
+
+        .property-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .property-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .property-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .property-list::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+
+        .property-list::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .score-number {
+                font-size: 48px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 Bot Detection Test Page</h1>
+            <p class="subtitle">Zeigt, wie eine Website Deinen Browser wahrnimmt | Für Playwright/Automation Tests</p>
+        </header>
+
+        <div class="score-card">
+            <div class="score-display">
+                <div>
+                    <div class="score-number" id="botScore">0</div>
+                    <div class="score-label" id="scoreLabel">Berechne...</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Bot-Flags erkannt:</div>
+                    <div style="font-size: 36px; font-weight: bold; color: #667eea;" id="flagCount">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>🚩 Bot-Detection Flags</h2>
+                <div class="property-list" id="botFlags"></div>
+            </div>
+
+            <div class="card">
+                <h2>🌐 Navigator Properties</h2>
+                <div class="property-list" id="navigatorProps"></div>
+            </div>
+
+            <div class="card">
+                <h2>🎭 Browser Features</h2>
+                <div class="property-list" id="browserFeatures"></div>
+            </div>
+
+            <div class="card">
+                <h2>🖼️ WebGL Fingerprint</h2>
+                <div class="property-list" id="webglInfo"></div>
+            </div>
+
+            <div class="card">
+                <h2>🔌 Plugins & Extensions</h2>
+                <div class="property-list" id="pluginsInfo"></div>
+            </div>
+
+            <div class="card">
+                <h2>📱 Device & Screen</h2>
+                <div class="property-list" id="deviceInfo"></div>
+            </div>
+
+            <div class="card">
+                <h2>🕰️ Performance & Timing</h2>
+                <div class="property-list" id="performanceInfo"></div>
+            </div>
+
+            <div class="card">
+                <h2>🎨 Canvas Fingerprint</h2>
+                <div class="property-list" id="canvasInfo"></div>
+            </div>
+        </div>
+
+        <div class="timestamp" id="timestamp"></div>
+    </div>
+
+    <script>
+        // Bot Detection Engine
+        class BotDetector {
+            constructor() {
+                this.flags = [];
+                this.score = 0;
+            }
+
+            addFlag(category, name, value, isBot = true) {
+                this.flags.push({ category, name, value, isBot });
+                if (isBot) this.score++;
+            }
+
+            // Check for WebDriver
+            checkWebDriver() {
+                if (navigator.webdriver) {
+                    this.addFlag('automation', 'navigator.webdriver', true, true);
+                } else {
+                    this.addFlag('automation', 'navigator.webdriver', false, false);
+                }
+            }
+
+            // Check for automation tools in window
+            checkAutomationTools() {
+                const tools = [
+                    'window.__playwright',
+                    'window.__puppeteer',
+                    'window.callPhantom',
+                    'window._phantom',
+                    'window.__nightmare',
+                    'window.domAutomation',
+                    'window.domAutomationController',
+                    'window._Selenium_IDE_Recorder',
+                    'window.selenium',
+                    'window.webdriver',
+                    'window.__webdriver_script_fn',
+                    'window.__driver_evaluate',
+                    'window.__webdriver_evaluate',
+                    'window.__selenium_evaluate',
+                    'window.__fxdriver_evaluate',
+                    'window.__driver_unwrapped',
+                    'window.__webdriver_unwrapped',
+                    'window.__selenium_unwrapped',
+                    'window.__fxdriver_unwrapped',
+                    'window.__webdriver_script_func',
+                    'window._WEBDRIVER_ELEM_CACHE',
+                    'window.cdc_adoQpoasnfa76pfcZLmcfl_Array',
+                    'window.cdc_adoQpoasnfa76pfcZLmcfl_Promise',
+                    'window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol'
+                ];
+
+                tools.forEach(tool => {
+                    const parts = tool.split('.');
+                    let obj = window;
+                    let exists = true;
+                    
+                    for (let i = 1; i < parts.length; i++) {
+                        if (obj && parts[i] in obj) {
+                            obj = obj[parts[i]];
+                        } else {
+                            exists = false;
+                            break;
+                        }
+                    }
+
+                    if (exists && obj !== undefined) {
+                        this.addFlag('automation', tool, 'gefunden', true);
+                    }
+                });
+            }
+
+            // Check for headless browser
+            checkHeadless() {
+                // Chrome headless check
+                if (navigator.userAgent.includes('HeadlessChrome')) {
+                    this.addFlag('headless', 'HeadlessChrome in UserAgent', true, true);
+                }
+
+                // Check for missing plugins (common in headless)
+                if (navigator.plugins.length === 0) {
+                    this.addFlag('headless', 'Keine Plugins', true, true);
+                } else {
+                    this.addFlag('headless', 'Plugins vorhanden', navigator.plugins.length, false);
+                }
+
+                // Check for webgl vendor
+                try {
+                    const canvas = document.createElement('canvas');
+                    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                    if (gl) {
+                        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                        if (debugInfo) {
+                            const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+                            const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                            
+                            if (vendor.includes('Google') && renderer.includes('SwiftShader')) {
+                                this.addFlag('headless', 'SwiftShader (Headless-Indikator)', true, true);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // Ignore errors
+                }
+            }
+
+            // Check for inconsistencies
+            checkInconsistencies() {
+                // Check if languages match
+                if (navigator.languages && navigator.language) {
+                    if (!navigator.languages.includes(navigator.language)) {
+                        this.addFlag('inconsistency', 'Sprachen stimmen nicht überein', true, true);
+                    }
+                }
+
+                // Check screen resolution vs available
+                if (screen.width === screen.availWidth && screen.height === screen.availHeight) {
+                    // This is suspicious - usually taskbar/menu bar reduce available space
+                    // But common in automation
+                } else {
+                    this.addFlag('screen', 'Realistische Screen-Dimensionen', false, false);
+                }
+
+                // Check if permissions API is available
+                if (!navigator.permissions) {
+                    this.addFlag('inconsistency', 'Permissions API fehlt', true, true);
+                }
+
+                // Check for chrome object in non-Chrome browsers
+                if (window.chrome && !navigator.userAgent.includes('Chrome')) {
+                    this.addFlag('inconsistency', 'Chrome-Objekt in Nicht-Chrome', true, true);
+                }
+            }
+
+            // Check mouse/touch behavior
+            checkInteraction() {
+                // Check if touch events are available
+                const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+                this.addFlag('interaction', 'Touch Support', hasTouch, false);
+
+                // Check mouse precision (will be updated on mouse move)
+                let mouseMovements = 0;
+                const mouseMoveHandler = () => {
+                    mouseMovements++;
+                };
+                document.addEventListener('mousemove', mouseMoveHandler);
+
+                setTimeout(() => {
+                    if (mouseMovements === 0) {
+                        this.addFlag('interaction', 'Keine Mausbewegung (5s)', true, true);
+                    }
+                    document.removeEventListener('mousemove', mouseMoveHandler);
+                }, 5000);
+            }
+
+            // Check for CDP (Chrome DevTools Protocol)
+            checkCDP() {
+                // Check for CDP runtime
+                if (window.chrome && window.chrome.runtime) {
+                    // This is normal for Chrome extensions
+                } else {
+                    // Check for CDP-specific properties
+                    const hasCDPProperties = Object.keys(window).some(key => 
+                        key.includes('__playwright') || 
+                        key.includes('__puppeteer') ||
+                        key.includes('$cdc_')
+                    );
+                    
+                    if (hasCDPProperties) {
+                        this.addFlag('cdp', 'CDP Properties gefunden', true, true);
+                    }
+                }
+            }
+
+            // Analyze all detections
+            analyze() {
+                this.checkWebDriver();
+                this.checkAutomationTools();
+                this.checkHeadless();
+                this.checkInconsistencies();
+                this.checkInteraction();
+                this.checkCDP();
+                
+                return {
+                    score: this.score,
+                    flags: this.flags,
+                    verdict: this.getVerdict()
+                };
+            }
+
+            getVerdict() {
+                if (this.score === 0) {
+                    return { level: 'human', text: 'Menschlich' };
+                } else if (this.score <= 3) {
+                    return { level: 'suspicious', text: 'Verdächtig' };
+                } else {
+                    return { level: 'bot', text: 'Bot erkannt' };
+                }
+            }
+        }
+
+        // Utility functions
+        function addDetectionItem(containerId, label, value, flagType = null) {
+            const container = document.getElementById(containerId);
+            const item = document.createElement('div');
+            item.className = 'detection-item';
+            
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'label';
+            labelSpan.textContent = label;
+            
+            const valueSpan = document.createElement('span');
+            if (flagType) {
+                valueSpan.className = `flag ${flagType}`;
+            } else {
+                valueSpan.className = 'value';
+            }
+            valueSpan.textContent = String(value);
+            
+            item.appendChild(labelSpan);
+            item.appendChild(valueSpan);
+            container.appendChild(item);
+        }
+
+        // Collect browser information
+        function collectBrowserInfo() {
+            // Navigator properties
+            const navProps = {
+                'User Agent': navigator.userAgent,
+                'Platform': navigator.platform,
+                'Language': navigator.language,
+                'Languages': navigator.languages ? navigator.languages.join(', ') : 'N/A',
+                'Online': navigator.onLine,
+                'Cookie Enabled': navigator.cookieEnabled,
+                'Do Not Track': navigator.doNotTrack || 'N/A',
+                'Hardware Concurrency': navigator.hardwareConcurrency || 'N/A',
+                'Device Memory': navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'N/A',
+                'Max Touch Points': navigator.maxTouchPoints || 0,
+                'Vendor': navigator.vendor || 'N/A',
+                'Product': navigator.product || 'N/A',
+                'Product Sub': navigator.productSub || 'N/A',
+                'App Name': navigator.appName || 'N/A',
+                'App Version': navigator.appVersion || 'N/A'
+            };
+
+            Object.entries(navProps).forEach(([key, value]) => {
+                addDetectionItem('navigatorProps', key, value);
+            });
+
+            // Browser features
+            const features = {
+                'WebGL': !!window.WebGLRenderingContext,
+                'WebGL2': !!window.WebGL2RenderingContext,
+                'WebRTC': !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+                'ServiceWorker': 'serviceWorker' in navigator,
+                'Notifications': 'Notification' in window,
+                'Geolocation': 'geolocation' in navigator,
+                'IndexedDB': !!window.indexedDB,
+                'LocalStorage': !!window.localStorage,
+                'SessionStorage': !!window.sessionStorage,
+                'WebAssembly': !!window.WebAssembly,
+                'Web Workers': !!window.Worker,
+                'Bluetooth': 'bluetooth' in navigator,
+                'USB': 'usb' in navigator,
+                'Battery API': 'getBattery' in navigator
+            };
+
+            Object.entries(features).forEach(([key, value]) => {
+                addDetectionItem('browserFeatures', key, value ? '✓ Verfügbar' : '✗ Nicht verfügbar', 
+                    value ? 'clean' : 'info');
+            });
+
+            // WebGL Info
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                
+                if (gl) {
+                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                    if (debugInfo) {
+                        addDetectionItem('webglInfo', 'Vendor', 
+                            gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL));
+                        addDetectionItem('webglInfo', 'Renderer', 
+                            gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL));
+                    }
+                    
+                    addDetectionItem('webglInfo', 'Version', gl.getParameter(gl.VERSION));
+                    addDetectionItem('webglInfo', 'GLSL Version', gl.getParameter(gl.SHADING_LANGUAGE_VERSION));
+                    addDetectionItem('webglInfo', 'Max Texture Size', gl.getParameter(gl.MAX_TEXTURE_SIZE));
+                    addDetectionItem('webglInfo', 'Max Viewport Dims', 
+                        gl.getParameter(gl.MAX_VIEWPORT_DIMS).join('x'));
+                } else {
+                    addDetectionItem('webglInfo', 'Status', 'WebGL nicht verfügbar');
+                }
+            } catch (e) {
+                addDetectionItem('webglInfo', 'Error', e.message);
+            }
+
+            // Plugins
+            if (navigator.plugins.length > 0) {
+                for (let i = 0; i < Math.min(navigator.plugins.length, 10); i++) {
+                    addDetectionItem('pluginsInfo', navigator.plugins[i].name, 
+                        navigator.plugins[i].description || 'Keine Beschreibung');
+                }
+            } else {
+                addDetectionItem('pluginsInfo', 'Plugins', 'Keine Plugins gefunden', 'warning');
+            }
+
+            // Device info
+            const deviceInfo = {
+                'Screen Width': screen.width + 'px',
+                'Screen Height': screen.height + 'px',
+                'Available Width': screen.availWidth + 'px',
+                'Available Height': screen.availHeight + 'px',
+                'Color Depth': screen.colorDepth + ' bit',
+                'Pixel Depth': screen.pixelDepth + ' bit',
+                'Pixel Ratio': window.devicePixelRatio || 1,
+                'Inner Width': window.innerWidth + 'px',
+                'Inner Height': window.innerHeight + 'px',
+                'Outer Width': window.outerWidth + 'px',
+                'Outer Height': window.outerHeight + 'px',
+                'Orientation': screen.orientation ? screen.orientation.type : 'N/A'
+            };
+
+            Object.entries(deviceInfo).forEach(([key, value]) => {
+                addDetectionItem('deviceInfo', key, value);
+            });
+
+            // Performance info
+            if (window.performance && window.performance.timing) {
+                const timing = window.performance.timing;
+                const loadTime = timing.loadEventEnd - timing.navigationStart;
+                
+                addDetectionItem('performanceInfo', 'Page Load Time', loadTime + 'ms');
+                addDetectionItem('performanceInfo', 'DOM Content Loaded', 
+                    (timing.domContentLoadedEventEnd - timing.navigationStart) + 'ms');
+                addDetectionItem('performanceInfo', 'Memory Usage', 
+                    performance.memory ? 
+                    Math.round(performance.memory.usedJSHeapSize / 1048576) + ' MB' : 'N/A');
+            }
+
+            if (window.performance && window.performance.now) {
+                addDetectionItem('performanceInfo', 'High Resolution Time', 
+                    performance.now().toFixed(3) + 'ms');
+            }
+
+            // Canvas fingerprint
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                if (ctx) {
+                    canvas.width = 200;
+                    canvas.height = 50;
+                    
+                    ctx.textBaseline = 'top';
+                    ctx.font = '14px Arial';
+                    ctx.fillStyle = '#f60';
+                    ctx.fillRect(125, 1, 62, 20);
+                    ctx.fillStyle = '#069';
+                    ctx.fillText('Canvas 🎨', 2, 15);
+                    ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+                    ctx.fillText('Fingerprint', 4, 17);
+                    
+                    const dataUrl = canvas.toDataURL();
+                    const hash = dataUrl.split(',')[1].substring(0, 32);
+                    
+                    addDetectionItem('canvasInfo', 'Canvas Hash', hash);
+                    addDetectionItem('canvasInfo', 'Canvas Support', '✓ Verfügbar', 'clean');
+                } else {
+                    addDetectionItem('canvasInfo', 'Status', 'Canvas nicht verfügbar', 'warning');
+                }
+            } catch (e) {
+                addDetectionItem('canvasInfo', 'Error', e.message, 'warning');
+            }
+        }
+
+        // Run detection
+        function runDetection() {
+            const detector = new BotDetector();
+            const results = detector.analyze();
+            
+            // Update score display
+            const scoreElement = document.getElementById('botScore');
+            const scoreLabelElement = document.getElementById('scoreLabel');
+            const flagCountElement = document.getElementById('flagCount');
+            
+            scoreElement.textContent = results.score;
+            scoreElement.className = 'score-number ' + results.verdict.level;
+            scoreLabelElement.textContent = results.verdict.text;
+            flagCountElement.textContent = results.flags.filter(f => f.isBot).length;
+            
+            // Display bot flags
+            results.flags.forEach(flag => {
+                const flagType = flag.isBot ? 'detected' : 'clean';
+                addDetectionItem('botFlags', flag.name, flag.value, flagType);
+            });
+            
+            // Collect other browser info
+            collectBrowserInfo();
+            
+            // Update timestamp
+            document.getElementById('timestamp').textContent = 
+                'Analyse durchgeführt: ' + new Date().toLocaleString('de-DE');
+        }
+
+        // Run on page load
+        window.addEventListener('load', () => {
+            runDetection();
+        });
+    </script>
+</body>
+</html>
