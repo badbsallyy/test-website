@@ -13,7 +13,15 @@ Diese Website zeigt:
 
 ## 🚀 Verwendung
 
-### Option 1: Direkt im Browser öffnen (file://)
+### Option 1: GitHub Pages (Online)
+Die Website ist online über GitHub Pages verfügbar:
+```
+https://badbsallyy.github.io/test-website/
+```
+
+Die Website wird automatisch bei jedem Push auf den `main` Branch aktualisiert.
+
+### Option 2: Direkt im Browser öffnen (file://)
 ```bash
 # Öffne die index.html direkt im Browser
 open index.html  # macOS
@@ -21,7 +29,7 @@ start index.html # Windows
 xdg-open index.html # Linux
 ```
 
-### Option 2: Mit lokalem HTTP-Server
+### Option 3: Mit lokalem HTTP-Server
 ```bash
 # Python 3
 python3 -m http.server 8000
